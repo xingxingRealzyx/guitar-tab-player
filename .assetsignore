@@ -1,0 +1,16 @@
+# Cloudflare 会把 assets 目录里的所有文件都上传，所以显式排除开发用文件。
+# 页面运行时真正需要的只有：index.html 和 vendor/（引擎 + 字体 + 音色库）。
+.git
+.gitignore
+.wrangler
+.assetsignore
+node_modules
+tools
+fixtures
+screenshots
+package.json
+package-lock.json
+README.md
+LICENSE
+serve.sh
+wrangler.jsonc

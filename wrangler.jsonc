@@ -1,0 +1,13 @@
+{
+  // 纯前端静态站：用 Worker 静态资源托管（和 circuit.doublexing.cc 同一范式）
+  // 部署：wrangler deploy
+  "name": "tabdeck",
+  "compatibility_date": "2026-08-01",
+  "assets": {
+    "directory": ".",
+    "not_found_handling": "404-page"
+  },
+  "routes": [
+    { "pattern": "tab.doublexing.cc", "custom_domain": true }
+  ]
+}

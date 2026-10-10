@@ -4,7 +4,9 @@
 
 自带的能力，恰好是 Songsterr 免费版锁在订阅后面的那部分：变速、循环、单轨静音/独奏、节拍器、预备拍。
 
-![播放中](screenshots/2-loaded.png)
+**在线版：<https://tab.doublexing.cc>**（部署在 Cloudflare Workers 静态资源上）
+
+![播放中](screenshots/deployed.png)
 
 ## 快速开始
 
@@ -18,6 +20,17 @@
 > **必须走 http，不能直接双击 `index.html`。** 页面用的是 ES module worker + AudioWorklet，`file://` 下浏览器会拦掉，音色库和渲染都会失败。页面检测到 `file://` 会给出提示。
 
 首次打开想先看效果：点「载入内置示例」（一段自写的 E 小调五声 riff，无版权问题）。
+
+## 部署到 Cloudflare Workers
+
+```sh
+wrangler deploy
+```
+
+配置在 `wrangler.jsonc`：Worker 名 `tabdeck`，静态资源目录 `.`，自定义域 `tab.doublexing.cc`。
+
+`.assetsignore` 把开发文件挡在上传之外 —— 线上只有 15 个文件（`index.html` + `vendor/`），`node_modules`、`tools/`、`screenshots/`、测试 fixture 都不会被发布，源码文件在线上返回 404。
+
 
 ## 支持的谱面格式
 
