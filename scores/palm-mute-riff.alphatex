@@ -1,0 +1,25 @@
+\title "闷音节奏 Riff"
+\subtitle "手掌闷音的颗粒感训练"
+\artist "TabDeck 练习曲"
+\track "节奏吉他"
+\tempo 120
+\instrument 30
+.
+\section "动机 A · 重音落在拍点上"
+:16 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} |
+:16 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm} 2.6{pm} 3.6{pm} 2.6{pm} |
+\section "动机 A · 重音后移到十六分反拍"
+:16 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 |
+:16 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 3.6{pm ac} 0.6{pm} x.6 0.6{pm} 3.6{pm ac} 0.6{pm} x.6 |
+\section "动机 B · 加入小三度与四度"
+:16 0.6{pm} 0.6{pm} 3.6{pm ac} 0.6{pm} 0.6{pm} 0.6{pm} 3.6{pm ac} 0.6{pm} 0.6{pm} 0.6{pm} 3.6{pm ac} 0.6{pm} 5.6{pm} 5.6{pm} 3.6{pm} 0.6{pm} |
+:16 0.6{pm ac} 0.6{pm} 3.6{pm} 0.6{pm} 0.6{pm ac} 0.6{pm} 3.6{pm} 0.6{pm} 0.6{pm ac} 0.6{pm} 3.6{pm} 0.6{pm} 2.6{pm} 3.6{pm} 2.6{pm} 0.6{pm} |
+\section "动机 A 再现"
+:16 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} |
+:16 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} x.6 x.6 0.6{pm} 0.6{pm} 0.6{pm} 3.6{pm} 5.6{pm} 3.6{pm} |
+\section "换把 · G5 与 A5"
+:16 3.6{pm ac} 3.6{pm} x.6 3.6{pm} 3.6{pm ac} 3.6{pm} x.6 3.6{pm} 5.6{pm ac} 5.6{pm} x.6 5.6{pm} 5.6{pm ac} 5.6{pm} x.6 5.6{pm} |
+:16 5.6{pm ac} 5.6{pm} x.6 5.6{pm} 3.6{pm ac} 3.6{pm} x.6 3.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} |
+\section "收尾 · 冲上 B 音再落回 E5"
+:16 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm} 3.6{pm} 5.6{pm} 7.6{pm} |
+:16 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} 0.6{pm ac} 0.6{pm} x.6 0.6{pm} :4 (0.6{ac} 2.5{ac}) |

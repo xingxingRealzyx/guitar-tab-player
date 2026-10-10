@@ -5,7 +5,9 @@
   "scripts": {
     "serve": "python3 -m http.server 8777 --bind 127.0.0.1",
     "fixtures": "node tools/make-fixtures.cjs",
-    "verify": "node tools/verify.mjs"
+    "verify": "node tools/verify.mjs",
+    "check:scores": "node tools/check-scores.mjs",
+    "verify:all": "npm run check:scores && npm run verify"
   },
   "author": "",
   "license": "MIT",

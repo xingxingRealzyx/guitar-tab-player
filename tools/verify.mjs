@@ -252,6 +252,97 @@ check('刷新后循环偏好保留', prefs.looping === true);
 check('刷新后按保留速度重建时间轴', Math.abs(prefs.endTime - 38400 / 0.6) < 200, `${Math.round(prefs.endTime)}ms`);
 await page.screenshot({ path: path.join(SHOTS, '7-restored.png') });
 
+// ---- 曲库 ----
+await page.click('#btnLibrary');
+await page.waitForSelector('#libList .librow', { timeout: 15000 });
+await page.waitForTimeout(500);
+const lib = await page.evaluate(() => {
+  const rows = [...document.querySelectorAll('#libList .librow')];
+  return {
+    cats: [...document.querySelectorAll('#libCats .chip')].map((c) => c.textContent.trim()),
+    rows: rows.length,
+    first: rows[0]?.querySelector('.t b')?.textContent,
+    notice: (document.getElementById('libNote').textContent || '').includes('公有领域'),
+  };
+});
+check('曲库面板列出全部曲目', lib.rows >= 20, `${lib.rows} 首 / ${lib.cats.length} 个分类：${lib.cats.slice(0, 3).join('，')}…`);
+check('曲库标注了版权来源', lib.notice);
+await page.screenshot({ path: path.join(SHOTS, '8-library.png') });
+
+await page.fill('#libSearch', '五声');
+await page.waitForTimeout(400);
+const searched = await page.evaluate(() => [...document.querySelectorAll('#libList .librow .t b')].map((x) => x.textContent));
+check('曲库搜索生效', searched.length > 0 && searched.length < lib.rows, `「五声」→ ${searched.length} 首`);
+await page.fill('#libSearch', '');
+await page.waitForTimeout(300);
+
+// 从曲库载入一首中国风曲目
+const target = await page.evaluate(() => {
+  const chip = [...document.querySelectorAll('#libCats .chip')].find((c) => c.textContent.includes('中国风 · 公有领域'));
+  chip?.click();
+  return true;
+});
+await page.waitForTimeout(400);
+const firstCn = await page.evaluate(() => document.querySelector('#libList .librow .t b').textContent);
+await page.click('#libList .librow');
+await page.waitForTimeout(3500);
+const fromLib = await page.evaluate(() => {
+  const a = window.__tabdeck.api;
+  return { title: a.score?.title, bars: a.score?.masterBars.length, ready: a.isReadyForPlayback,
+           svg: !!document.querySelector('#alphaTab svg'), status: document.getElementById('status').textContent };
+});
+check('从曲库载入曲目并渲染', fromLib.svg && fromLib.ready && fromLib.bars > 8,
+  `《${fromLib.title}》${fromLib.bars} 小节，状态栏「${fromLib.status}」`);
+check('曲库载入的是所选曲目', fromLib.title === firstCn, `${firstCn} → ${fromLib.title}`);
+
+// 多轨电吉他编曲：主音 + 节奏 + 贝斯，且能分轨静音
+const multi = await page.evaluate(() => {
+  const a = window.__tabdeck.api;
+  return { tracks: a.tracks.map((t) => t.name), pills: [...document.querySelectorAll('#pills .pill')].map((p) => p.textContent) };
+});
+check('中国风曲目是多轨编曲（主音/节奏/贝斯）',
+  multi.tracks.length >= 3 && multi.tracks.some((t) => t.includes('节奏')) && multi.tracks.some((t) => t.includes('贝斯')),
+  multi.tracks.join(' / '));
+check('音轨切换胶囊每轨一个', multi.pills.length === multi.tracks.length + 1, multi.pills.join(' · '));
+
+// 单独看节奏轨 + 静音它，验证分轨真的生效
+await page.evaluate(() => {
+  const pill = [...document.querySelectorAll('#pills .pill')].find((p) => p.textContent.includes('节奏'));
+  pill?.click();
+});
+await page.waitForTimeout(1200);
+await page.click('#btnMixer');
+await page.waitForTimeout(400);
+const muted = await page.evaluate(async () => {
+  const rows = [...document.querySelectorAll('#mixerList .mtrack')];
+  const rhythm = rows.find((r) => r.textContent.includes('节奏'));
+  const btn = rhythm?.querySelector('.mm.m');
+  btn?.click();
+  return { rows: rows.length, clicked: !!btn, on: btn?.classList.contains('on') };
+});
+check('混音台能对节奏吉他单独静音', muted.clicked && muted.on, `${muted.rows} 条音轨，节奏轨静音=${muted.on}`);
+await page.screenshot({ path: path.join(SHOTS, '10-multitrack.png') });
+await page.click('#btnMixerClose');
+await page.screenshot({ path: path.join(SHOTS, '9-score-from-library.png') });
+void target;
+
+// ---- 多轨 .gp 文件（真实 Guitar Pro）不能只剩第一轨 ----
+await page.setInputFiles('input[type=file]', path.join(ROOT, 'fixtures', 'multitrack.gp'));
+await page.waitForTimeout(4000);
+const mt = await page.evaluate(() => {
+  const a = window.__tabdeck.api;
+  return {
+    tracks: (a.tracks || []).map((t) => t.name),
+    scoreTracks: a.score ? a.score.tracks.length : 0,
+    pills: [...document.querySelectorAll('#pills .pill')].map((p) => p.textContent),
+  };
+});
+check('多轨 .gp 的全部音轨都被载入（不是只剩第一轨）',
+  mt.tracks.length >= 3 && mt.tracks.length === mt.scoreTracks,
+  `${mt.tracks.length}/${mt.scoreTracks} 轨：[${mt.tracks.join(' / ')}]`);
+check('多轨文件的音轨胶囊完整', mt.pills.length === mt.tracks.length + 1, mt.pills.join(' · '));
+await page.screenshot({ path: path.join(SHOTS, '11-multitrack-gp.png') });
+
 check('无控制台报错 / 无失败请求', errors.length === 0, errors.slice(0, 3).join(' | '));
 
 await browser.close();

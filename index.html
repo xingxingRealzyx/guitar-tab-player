@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TabDeck · 本地吉他谱播放器</title>
+<title>TabDeck · 吉他谱播放器</title>
 <style>
   :root {
     --bg: #0d0f13;
@@ -187,6 +187,48 @@
   }
   .keys span { color: var(--muted); }
   .card .close { margin-top: 20px; display: flex; justify-content: flex-end; }
+
+  /* 曲库 */
+  .card.lib { width: min(860px, 95vw); }
+  .libhead { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .libhead h2 { margin: 0; flex: none; }
+  .libhead input {
+    flex: 1; min-width: 0; height: 32px; padding: 0 12px; font: inherit; font-size: 13px;
+    color: var(--text); background: var(--panel-2); border: 1px solid var(--border); border-radius: 7px;
+  }
+  .libhead input:focus { outline: none; border-color: var(--accent-dim); }
+  .libhead input::placeholder { color: var(--muted-2); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .chip {
+    padding: 4px 11px; border-radius: 999px; border: 1px solid var(--border);
+    font-size: 12px; color: var(--muted); background: var(--panel-2);
+  }
+  .chip:hover { color: var(--text); border-color: #3a4150; }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: #06210f; font-weight: 600; }
+  .liblist { max-height: 54vh; overflow: auto; display: flex; flex-direction: column; gap: 7px; }
+  .librow {
+    display: flex; align-items: center; gap: 12px; padding: 10px 13px; cursor: pointer;
+    border: 1px solid var(--border-soft); border-radius: var(--radius); background: #101319;
+  }
+  .librow:hover { border-color: var(--accent-dim); background: var(--panel-2); }
+  .librow.current { border-color: var(--accent); }
+  .librow .main { flex: 1; min-width: 0; }
+  .librow .t { font-size: 13.5px; }
+  .librow .t b { font-weight: 600; }
+  .librow .s { color: var(--muted); font-size: 12px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .librow .tags { color: var(--muted-2); font-size: 11px; font-family: var(--mono); margin-top: 3px; }
+  .librow .right { flex: none; display: flex; align-items: center; gap: 8px; }
+  .badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 999px;
+    border: 1px solid var(--border); color: var(--muted); white-space: nowrap;
+  }
+  .badge.d1 { color: #8ee6b0; border-color: #2c5b41; }
+  .badge.d2 { color: #ffd08a; border-color: #5d4a26; }
+  .badge.d3 { color: #ff9f9f; border-color: #5f2f2f; }
+  .librow .go { color: var(--muted-2); font-size: 13px; }
+  .librow:hover .go { color: var(--accent); }
+  .libnote { margin: 14px 0 0; max-width: none; line-height: 1.6; }
+  .libempty { color: var(--muted); font-size: 13px; padding: 24px 0; text-align: center; }
   .status { color: var(--muted); font-size: 12px; font-family: var(--mono); }
   .loading { display: inline-flex; align-items: center; gap: 8px; color: var(--warn); font-size: 12px; }
   .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); animation: pulse 1.1s infinite; }
@@ -196,11 +238,12 @@
 <body>
 
 <header class="topbar">
-  <div class="brand"><b>TabDeck</b><span>本地谱面播放器</span></div>
+  <div class="brand"><b>TabDeck</b><span>吉他谱播放器</span></div>
   <div class="spacer"></div>
   <div class="song hidden" id="songInfo"><span class="t" id="songTitle"></span><span class="a" id="songArtist"></span></div>
   <div class="spacer"></div>
   <span class="status" id="status"></span>
+  <button class="tbtn" id="btnLibrary">曲库</button>
   <button class="tbtn" id="btnOpen">打开文件</button>
   <button class="tbtn" id="btnMixer">混音台</button>
   <button class="tbtn" id="btnHelp">快捷键</button>
@@ -216,10 +259,12 @@
       <div class="rowbtns">
         <button class="btn primary" id="btnPick">选择文件</button>
         <button class="btn" id="btnDemo">载入内置示例</button>
+        <button class="btn" id="btnLibFromEmpty">打开曲库</button>
       </div>
     </div>
     <p class="tiny">
-      本工具不托管、不分发任何乐谱，只做本地渲染与播放。请仅加载你有权使用的谱面文件。
+      曲库只收公有领域作品（作者逝世满 50 年）与原创练习曲；你拖进来的谱不会上传，只在这个浏览器里解析。
+      其他乐谱请仅加载你有权使用的文件。
     </p>
   </section>
 
@@ -302,15 +347,31 @@
       <kbd>1 – 9</kbd><span>只显示第 N 条音轨</span>
       <kbd>0</kbd><span>显示全部音轨</span>
       <kbd>I</kbd><span>打开混音台</span>
+      <kbd>B</kbd><span>打开曲库</span>
       <kbd>?</kbd><span>开关这个面板</span>
       <kbd>Esc</kbd><span>关闭面板</span>
     </div>
     <h3>说明</h3>
     <p class="tiny" style="max-width:none">
-      变速、循环、单轨静音全部免费无限制。谱面版权归原权利人所有，请仅加载你有权使用的文件。
+      变速、循环、单轨静音全部免费无限制。曲库只收公有领域作品（作者逝世满 50 年）与原创练习曲；
+      其他谱面版权归原权利人所有，请仅加载你有权使用的文件。
       引擎：<a href="https://www.alphatab.net/" style="color:var(--accent)">alphaTab</a>（MPL-2.0）。
     </p>
     <div class="close"><button class="btn" id="btnHelpClose">知道了</button></div>
+  </div>
+</div>
+
+<!-- 曲库 -->
+<div class="overlay hidden" id="library">
+  <div class="card lib">
+    <div class="libhead">
+      <h2>曲库</h2>
+      <input id="libSearch" type="search" placeholder="搜索曲名 / 标签 / 难度…" autocomplete="off">
+      <button class="btn" id="btnLibClose">关闭</button>
+    </div>
+    <div class="chips" id="libCats"></div>
+    <div class="liblist" id="libList"></div>
+    <p class="tiny libnote" id="libNote"></p>
   </div>
 </div>
 
@@ -325,6 +386,7 @@ const el = {
   tCur: $('tCur'), tEnd: $('tEnd'), spd: $('spd'), spdVal: $('spdVal'),
   btnPlay: $('btnPlay'), btnLoop: $('btnLoop'), btnMetro: $('btnMetro'), btnCount: $('btnCount'),
   btnA: $('btnA'), btnB: $('btnB'), btnABClear: $('btnABClear'), vol: $('vol'),
+  library: $('library'), libCats: $('libCats'), libList: $('libList'), libSearch: $('libSearch'), libNote: $('libNote'),
 };
 
 /* ---------------- 偏好持久化 ---------------- */
@@ -390,7 +452,9 @@ async function initEngine() {
   const SP = alphaTab.StaveProfile || {};
   AT = alphaTab;
   const settings = {
-    core: { fontDirectory: './vendor/alphatab/font/' },
+    // tracks: 'all' 必须显式给：默认 null 时 alphaTab 只导入第一轨，
+    // 多轨编曲（主音/节奏/贝斯）和真实乐队谱会只剩一把吉他。
+    core: { fontDirectory: './vendor/alphatab/font/', tracks: 'all' },
     display: {
       layoutMode: LM.Horizontal !== undefined ? LM.Horizontal : 'Horizontal',
       scale: 1.25,
@@ -433,7 +497,6 @@ async function initEngine() {
 function wire(a, alphaTab) {
   api = a;
   a.scoreLoaded.on((score) => {
-    tracks = a.tracks || [];
     activeTrackIndex = null;
     readyApplied = false;
     soloState.clear(); muteState.clear();
@@ -444,12 +507,17 @@ function wire(a, alphaTab) {
     el.songTitle.textContent = score.title || '未命名';
     el.songArtist.textContent = score.artist || '';
     document.title = `${score.title || '未命名'} · TabDeck`;
-    renderPills();
-    renderMixer();
+    buildTrackUI();
     updateTransportUI();
     el.tEnd.textContent = fmt(a.endTime);
-    el.status.textContent = `${tracks.length} 轨`;
     syncScrollOffset();     // 视口这时才有宽度，滚动偏移要在这里算
+    // 多轨补全：alphaTab 的 load() 路径默认只渲染第一轨（settings.core.tracks 对它无效，
+    // 传 'all' 反而会一轨都不渲染），所以这里检测到少轨就手动把全部音轨渲染出来。
+    const all = (score && score.tracks) || [];
+    if (all.length > 1 && (a.tracks || []).length < all.length) {
+      a.renderTracks(all);
+      setTimeout(() => { if (api === a) buildTrackUI(); }, 500);
+    }
   });
   a.playerStateChanged.on(() => updateTransportUI());
   a.soundFontLoad.on(() => el.loading.classList.remove('hidden'));
@@ -479,6 +547,14 @@ async function loadFile(file) {
 }
 
 /* ---------------- 音轨 UI ---------------- */
+// 统一从 api 取当前音轨并重建 UI（多轨补全后也要再调一次）
+function buildTrackUI() {
+  tracks = (api && api.tracks) || [];
+  renderPills();
+  renderMixer();
+  el.status.textContent = `${tracks.length} 轨`;
+}
+
 function renderPills() {
   el.pills.innerHTML = '';
   const mk = (label, index) => {
@@ -611,6 +687,97 @@ function tickUI() {
   requestAnimationFrame(tickUI);
 }
 
+/* ---------------- 曲库 ---------------- */
+// 只收公有领域作品（作者逝世满 50 年）与原创练习曲，索引在 scores/index.json
+let libData = null, libCat = 'all', libQuery = '', libCurrent = null;
+
+async function openLibrary() {
+  el.library.classList.remove('hidden');
+  if (!libData) {
+    el.libList.innerHTML = '<div class="libempty">曲库加载中…</div>';
+    try {
+      const res = await fetch('./scores/index.json', { cache: 'no-cache' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      libData = await res.json();
+      el.libNote.textContent = libData.notice || '';
+    } catch (e) {
+      el.libList.innerHTML = `<div class="libempty">曲库加载失败：${e.message}</div>`;
+      return;
+    }
+  }
+  renderLibCats();
+  renderLibList();
+  el.libSearch.focus();
+}
+
+function renderLibCats() {
+  el.libCats.innerHTML = '';
+  const cats = [{ id: 'all', name: '全部' }, ...(libData.categories || [])];
+  for (const c of cats) {
+    const b = document.createElement('button');
+    b.className = 'chip' + (libCat === c.id ? ' on' : '');
+    const n = c.id === 'all' ? libData.scores.length : libData.scores.filter((s) => s.category === c.id).length;
+    b.textContent = `${c.name} ${n}`;
+    b.onclick = () => { libCat = c.id; renderLibCats(); renderLibList(); };
+    el.libCats.appendChild(b);
+  }
+}
+
+function renderLibList() {
+  const q = libQuery.trim().toLowerCase();
+  const rows = libData.scores.filter((s) => {
+    if (libCat !== 'all' && s.category !== libCat) return false;
+    if (!q) return true;
+    return [s.title, s.subtitle, s.difficulty, ...(s.tags || [])].join(' ').toLowerCase().includes(q);
+  });
+  el.libList.innerHTML = '';
+  if (!rows.length) {
+    el.libList.innerHTML = '<div class="libempty">没有匹配的曲目</div>';
+    return;
+  }
+  const dClass = { 入门: 'd1', 进阶: 'd2', 高级: 'd3' };
+  for (const s of rows) {
+    const row = document.createElement('div');
+    row.className = 'librow' + (libCurrent === s.id ? ' current' : '');
+    row.innerHTML = `
+      <div class="main">
+        <div class="t"><b></b></div>
+        <div class="s"></div>
+        <div class="tags"></div>
+      </div>
+      <div class="right">
+        <span class="badge ${dClass[s.difficulty] || ''}"></span>
+        <span class="go">${libCurrent === s.id ? '●' : '▶'}</span>
+      </div>`;
+    row.querySelector('.t b').textContent = s.title;
+    row.querySelector('.s').textContent = s.subtitle || '';
+    row.querySelector('.tags').textContent = (s.tags || []).join(' · ');
+    row.querySelector('.badge').textContent = s.difficulty || '';
+    row.title = s.source || '';
+    row.onclick = () => loadScore(s);
+    el.libList.appendChild(row);
+  }
+}
+
+async function loadScore(entry) {
+  if (!api) return;
+  el.status.textContent = `载入 ${entry.title}…`;
+  try {
+    const res = await fetch(entry.file, { cache: 'no-cache' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    api.tex(text, 'all');   // 必须显式传 'all'：默认只导入第一轨，多轨编曲会只剩主音
+    libCurrent = entry.id;
+    prefs.lastScore = entry.id;
+    savePrefs();
+    el.status.textContent = entry.title;
+    el.library.classList.add('hidden');
+  } catch (e) {
+    el.status.textContent = '';
+    toast(`《${entry.title}》加载失败：${e.message}`);
+  }
+}
+
 /* ---------------- 视口定位（“滑窗”手感） ---------------- */
 // Songsterr 的手感是：播放指针大致停在视口左侧 1/3，谱面从右往左滑过去。
 // alphaTab 默认把指针钉在视口最左边（scrollOffsetX = 0），当前小节会被切掉一大半；
@@ -652,6 +819,7 @@ function rewind() {
 $('btnPick').onclick = () => pickInput.click();
 $('btnOpen').onclick = () => pickInput.click();
 $('btnDemo').onclick = () => { api.tex(DEMO_TEX); el.status.textContent = '内置示例'; };
+$('btnLibFromEmpty').onclick = () => openLibrary();
 const pickInput = document.createElement('input');
 pickInput.type = 'file';
 pickInput.style.display = 'none';
@@ -716,6 +884,13 @@ el.bar.onclick = (e) => {
 };
 
 $('btnMixer').onclick = () => el.mixer.classList.toggle('hidden');
+$('btnLibrary').onclick = () => {
+  if (el.library.classList.contains('hidden')) openLibrary();
+  else el.library.classList.add('hidden');
+};
+$('btnLibClose').onclick = () => el.library.classList.add('hidden');
+el.libSearch.oninput = () => { libQuery = el.libSearch.value; renderLibList(); };
+el.library.onclick = (e) => { if (e.target === el.library) el.library.classList.add('hidden'); };
 $('btnMixerClose').onclick = () => el.mixer.classList.add('hidden');
 $('btnHelp').onclick = () => el.help.classList.remove('hidden');
 $('btnHelpClose').onclick = () => el.help.classList.add('hidden');
@@ -736,6 +911,9 @@ document.addEventListener('keydown', (e) => {
     case 'n': case 'N': el.btnMetro.onclick(); break;
     case 'c': case 'C': el.btnCount.onclick(); break;
     case 'i': case 'I': el.mixer.classList.toggle('hidden'); break;
+    case 'b': case 'B':
+      if (el.library.classList.contains('hidden')) openLibrary(); else el.library.classList.add('hidden');
+      break;
     case 'm': case 'M': {
       const i = activeTrackIndex === null ? 0 : activeTrackIndex;
       const t = tracks[i];
@@ -743,7 +921,9 @@ document.addEventListener('keydown', (e) => {
       break;
     }
     case '?': el.help.classList.toggle('hidden'); break;
-    case 'Escape': el.help.classList.add('hidden'); el.mixer.classList.add('hidden'); break;
+    case 'Escape':
+      el.help.classList.add('hidden'); el.mixer.classList.add('hidden'); el.library.classList.add('hidden');
+      break;
     default:
       if (/^[0-9]$/.test(e.key) && tracks.length) {
         const n = Number(e.key);

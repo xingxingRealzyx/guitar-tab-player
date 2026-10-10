@@ -1,0 +1,234 @@
+{
+  "version": 1,
+  "notice": "曲库只收两类内容：一是已进入公有领域的中国作品（作者逝世满 50 年），改编版权归本仓库；二是原创练习曲。现代流行歌曲的记谱受版权保护，本站不收录——请用「打开文件」载入你自己手上的谱。",
+  "categories": [
+    { "id": "cn", "name": "中国风 · 公有领域" },
+    { "id": "cn-orig", "name": "中国风 · 原创" },
+    { "id": "blues", "name": "布鲁斯" },
+    { "id": "rhythm", "name": "节奏 / Riff" },
+    { "id": "technique", "name": "技巧专项" },
+    { "id": "style", "name": "风格练习" }
+  ],
+  "scores": [
+    {
+      "id": "molihua",
+      "title": "茉莉花",
+      "subtitle": "江苏民歌 · 电吉他改编",
+      "category": "cn",
+      "difficulty": "入门",
+      "tags": ["五声", "Clean", "单音旋律"],
+      "source": "江苏民歌，传统曲目（公有领域）；改编 © 本仓库",
+      "file": "scores/molihua.alphatex"
+    },
+    {
+      "id": "yangguan-sandie",
+      "title": "阳关三叠",
+      "subtitle": "古曲 · 电吉他改编",
+      "category": "cn",
+      "difficulty": "入门",
+      "tags": ["古曲", "五声", "揉弦"],
+      "source": "中国古曲（公有领域）；改编 © 本仓库",
+      "file": "scores/yangguan-sandie.alphatex"
+    },
+    {
+      "id": "caiyun-zuiyue",
+      "title": "彩云追月",
+      "subtitle": "任光 1935 · 电吉他改编",
+      "category": "cn",
+      "difficulty": "进阶",
+      "tags": ["五声", "切分", "Clean"],
+      "source": "任光作曲（1941 年逝世，中国已过保护期，公有领域）；改编 © 本仓库",
+      "file": "scores/caiyun-zuiyue.alphatex"
+    },
+    {
+      "id": "erquan-yingyue",
+      "title": "二泉映月",
+      "subtitle": "华彦钧（阿炳）· 电吉他改编",
+      "category": "cn",
+      "difficulty": "进阶",
+      "tags": ["推弦", "颤音", "苍凉"],
+      "source": "华彦钧作曲（1950 年逝世，中国已过保护期，公有领域）；改编 © 本仓库",
+      "file": "scores/erquan-yingyue.alphatex"
+    },
+    {
+      "id": "yuzhou-changwan",
+      "title": "渔舟唱晚",
+      "subtitle": "娄树华 1938 · 电吉他改编",
+      "category": "cn",
+      "difficulty": "进阶",
+      "tags": ["琶音", "五声", "Clean"],
+      "source": "娄树华编曲（1952 年逝世，中国已过保护期，公有领域）；改编 © 本仓库",
+      "file": "scores/yuzhou-changwan.alphatex"
+    },
+    {
+      "id": "chunjiang-huayueye",
+      "title": "春江花月夜",
+      "subtitle": "古曲 · 电吉他改编",
+      "category": "cn",
+      "difficulty": "进阶",
+      "tags": ["古曲", "分解和弦", "意境"],
+      "source": "中国古曲（公有领域）；改编 © 本仓库",
+      "file": "scores/chunjiang-huayueye.alphatex"
+    },
+    {
+      "id": "jinshe-kuangwu",
+      "title": "金蛇狂舞",
+      "subtitle": "聂耳 1934 · 电吉他改编",
+      "category": "cn",
+      "difficulty": "高级",
+      "tags": ["快速", "五声", "锣鼓点"],
+      "source": "聂耳作曲（1935 年逝世，中国已过保护期，公有领域）；改编 © 本仓库",
+      "file": "scores/jinshe-kuangwu.alphatex"
+    },
+    {
+      "id": "cn-rock-riff",
+      "title": "中国风摇滚 Riff",
+      "subtitle": "原创 · 五声 + 强力和弦",
+      "category": "cn-orig",
+      "difficulty": "进阶",
+      "tags": ["原创", "失真", "闷音"],
+      "source": "原创练习曲 © 本仓库（可自由使用）",
+      "file": "scores/cn-rock-riff.alphatex"
+    },
+    {
+      "id": "wusheng-solo",
+      "title": "五声 Solo 练习",
+      "subtitle": "原创 · 推弦与滑音的国风语汇",
+      "category": "cn-orig",
+      "difficulty": "高级",
+      "tags": ["原创", "Solo", "推弦"],
+      "source": "原创练习曲 © 本仓库（可自由使用）",
+      "file": "scores/wusheng-solo.alphatex"
+    },
+    {
+      "id": "blues-shuffle-e",
+      "title": "12 小节布鲁斯（E · Shuffle）",
+      "subtitle": "最常用的电吉他即兴框架",
+      "category": "blues",
+      "difficulty": "入门",
+      "tags": ["Shuffle", "Riff", "12 小节"],
+      "source": "原创练习曲 © 本仓库（可自由使用）",
+      "file": "scores/blues-shuffle-e.alphatex"
+    },
+    {
+      "id": "slow-blues-a",
+      "title": "慢速布鲁斯（A · 带 Turnaround）",
+      "subtitle": "慢速推弦与转身句",
+      "category": "blues",
+      "difficulty": "进阶",
+      "tags": ["慢速", "Turnaround", "推弦"],
+      "source": "原创练习曲 © 本仓库（可自由使用）",
+      "file": "scores/slow-blues-a.alphatex"
+    },
+    {
+      "id": "power-chord-progressions",
+      "title": "Power Chord 进行套路",
+      "subtitle": "摇滚最常用的四个和弦走向",
+      "category": "rhythm",
+      "difficulty": "入门",
+      "tags": ["强力和弦", "节奏", "入门"],
+      "source": "原创练习曲 © 本仓库（可自由使用）",
+      "file": "scores/power-chord-progressions.alphatex"
+    },
+    {
+      "id": "palm-mute-riff",
+      "title": "闷音节奏 Riff",
+      "subtitle": "手掌闷音的颗粒感训练",
+      "category": "rhythm",
+      "difficulty": "入门",
+      "tags": ["闷音", "Riff", "颗粒"],
+      "source": "原创练习曲 © 本仓库（可自由使用）",
+      "file": "scores/palm-mute-riff.alphatex"
+    },
+    {
+      "id": "pentatonic-positions",
+      "title": "五声五个把位",
+      "subtitle": "E 小调五声 · 五个盒型连起来",
+      "category": "technique",
+      "difficulty": "入门",
+      "tags": ["音阶", "把位", "基本功"],
+      "source": "原创练习曲 © 本仓库（可自由使用）",
+      "file": "scores/pentatonic-positions.alphatex"
+    },
+    {
+      "id": "alternate-picking",
+      "title": "交替拨弦练习",
+      "subtitle": "一弦到六弦的均匀度训练",
+      "category": "technique",
+      "difficulty": "进阶",
+      "tags": ["拨弦", "均匀", "提速"],
+      "source": "原创练习曲 © 本仓库（可自由使用）",
+      "file": "scores/alternate-picking.alphatex"
+    },
+    {
+      "id": "bend-vibrato",
+      "title": "推弦与颤音",
+      "subtitle": "半音/全音推弦 + 手腕颤音",
+      "category": "technique",
+      "difficulty": "进阶",
+      "tags": ["推弦", "颤音", "表情"],
+      "source": "原创练习曲 © 本仓库（可自由使用）",
+      "file": "scores/bend-vibrato.alphatex"
+    },
+    {
+      "id": "natural-harmonics",
+      "title": "自然泛音练习",
+      "subtitle": "12/7/5 品泛音点与旋律",
+      "category": "technique",
+      "difficulty": "进阶",
+      "tags": ["泛音", "音色", "Clean"],
+      "source": "原创练习曲 © 本仓库（可自由使用）",
+      "file": "scores/natural-harmonics.alphatex"
+    },
+    {
+      "id": "tapping-basics",
+      "title": "点弦入门",
+      "subtitle": "右手点弦 + 勾击的三音句型",
+      "category": "technique",
+      "difficulty": "高级",
+      "tags": ["点弦", "连奏", "速度"],
+      "source": "原创练习曲 © 本仓库（可自由使用）",
+      "file": "scores/tapping-basics.alphatex"
+    },
+    {
+      "id": "sweep-arpeggios",
+      "title": "扫拨三弦琶音",
+      "subtitle": "小/大/减三和弦的扫拨形态",
+      "category": "technique",
+      "difficulty": "高级",
+      "tags": ["扫拨", "琶音", "速度"],
+      "source": "原创练习曲 © 本仓库（可自由使用）",
+      "file": "scores/sweep-arpeggios.alphatex"
+    },
+    {
+      "id": "metal-riff",
+      "title": "金属 Riff 套路",
+      "subtitle": "低音弦闷音 + 三连音推进",
+      "category": "style",
+      "difficulty": "进阶",
+      "tags": ["金属", "闷音", "三连音"],
+      "source": "原创练习曲 © 本仓库（可自由使用）",
+      "file": "scores/metal-riff.alphatex"
+    },
+    {
+      "id": "funk-16th",
+      "title": "Funk 十六分切分",
+      "subtitle": "单音切分与十六分扫弦",
+      "category": "style",
+      "difficulty": "进阶",
+      "tags": ["Funk", "切分", "律动"],
+      "source": "原创练习曲 © 本仓库（可自由使用）",
+      "file": "scores/funk-16th.alphatex"
+    },
+    {
+      "id": "postrock-clean",
+      "title": "后摇 Clean 分解",
+      "subtitle": "延迟感分解 + 单音旋律",
+      "category": "style",
+      "difficulty": "入门",
+      "tags": ["后摇", "Clean", "分解"],
+      "source": "原创练习曲 © 本仓库（可自由使用）",
+      "file": "scores/postrock-clean.alphatex"
+    }
+  ]
+}
