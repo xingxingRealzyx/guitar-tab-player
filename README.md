@@ -89,7 +89,7 @@ screenshots/               # verify 跑出来的截图
 npm install
 npx playwright install chromium   # 首次
 npm run fixtures                  # 生成 fixtures/demo.gp
-npm run verify                    # 28 项检查 + 截图
+npm run verify                    # 29 项检查 + 截图
 ```
 
 `npm run verify` 会起一个内置静态服务，用真实 Chromium 加载真实 `.gp` 文件，逐项断言：
@@ -103,7 +103,7 @@ npm run verify                    # 28 项检查 + 截图
 - 时间轴随速度拉伸、六线谱切换、混音台静音、刷新后偏好保留
 - 全程无控制台报错、无失败请求
 
-当前状态：**28/28 通过**。
+当前状态：**29/29 通过**（在从 GitHub 全新克隆出来的副本上同样 29/29）。
 
 ## 已知限制
 
