@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TabDeck · 本地吉他谱播放器</title>
+<style>
+  :root {
+    --bg: #0d0f13;
+    --panel: #14171d;
+    --panel-2: #191d24;
+    --border: #262b34;
+    --border-soft: #1e232b;
+    --text: #e7eaee;
+    --muted: #8b929e;
+    --muted-2: #626a76;
+    --accent: #3ddc84;
+    --accent-dim: #1f7a4a;
+    --warn: #ffb020;
+    --radius: 8px;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    display: flex; flex-direction: column; overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  .hidden { display: none !important; }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 14px;
+    padding: 0 16px; height: 50px;
+    background: var(--panel); border-bottom: 1px solid var(--border-soft);
+  }
+  .brand { display: flex; align-items: baseline; gap: 8px; }
+  .brand b { font-size: 15px; letter-spacing: .2px; }
+  .brand span { color: var(--muted-2); font-size: 12px; }
+  .topbar .spacer { flex: 1; }
+  .song {
+    min-width: 0; display: flex; align-items: baseline; gap: 10px;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  .song .t { font-weight: 600; }
+  .song .a { color: var(--muted); font-size: 13px; }
+  .tbtn {
+    color: var(--muted); padding: 6px 10px; border-radius: 6px; font-size: 13px;
+    border: 1px solid transparent; white-space: nowrap;
+  }
+  .tbtn:hover { color: var(--text); background: var(--panel-2); border-color: var(--border); }
+
+  /* ---------- main ---------- */
+  main { flex: 1 1 auto; min-height: 0; position: relative; display: flex; flex-direction: column; }
+
+  /* empty state */
+  .empty {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 18px; padding: 40px 20px; text-align: center;
+  }
+  .drop {
+    width: min(620px, 92vw); border: 1.5px dashed var(--border); border-radius: 14px;
+    padding: 48px 28px; background: #101319; transition: border-color .15s, background .15s;
+  }
+  .drop.hot { border-color: var(--accent); background: #101a16; }
+  .drop h1 { margin: 0 0 6px; font-size: 20px; font-weight: 650; }
+  .drop p { margin: 0; color: var(--muted); font-size: 13px; }
+  .drop .fmts { margin-top: 14px; font-family: var(--mono); font-size: 11.5px; color: var(--muted-2); }
+  .rowbtns { display: flex; gap: 10px; justify-content: center; margin-top: 22px; flex-wrap: wrap; }
+  .btn {
+    padding: 9px 16px; border-radius: var(--radius); border: 1px solid var(--border);
+    background: var(--panel-2); font-size: 13px;
+  }
+  .btn:hover { border-color: #3a4150; }
+  .btn.primary { background: var(--accent); color: #06210f; border-color: var(--accent); font-weight: 600; }
+  .btn.primary:hover { filter: brightness(1.06); }
+  .tiny { color: var(--muted-2); font-size: 12px; max-width: 560px; }
+
+  /* stage */
+  .stage { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .trackstrip {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+    border-bottom: 1px solid var(--border-soft); overflow-x: auto; white-space: nowrap;
+    background: #0f1217;
+  }
+  .trackstrip .label { color: var(--muted-2); font-size: 12px; margin-right: 2px; }
+  .pill {
+    padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border);
+    font-size: 12.5px; color: var(--muted); background: var(--panel);
+  }
+  .pill:hover { color: var(--text); }
+  .pill.on { color: #06210f; background: var(--accent); border-color: var(--accent); font-weight: 600; }
+  .viewport { flex: 1; min-height: 0; overflow: auto; position: relative; }
+  #alphaTab { padding: 8px 0 24px; }
+  #alphaTab .at-surface { background: transparent !important; }
+  /* alphaTab 只给光标元素加 class、不设任何颜色（官方包也不带 css 文件），
+     不自己配的话播放指针是透明的——谱面在滑但你看不出播到哪了。 */
+  #alphaTab .at-cursor-bar { background: rgba(61, 220, 132, .13); }
+  #alphaTab .at-cursor-beat { background: var(--accent); box-shadow: 0 0 6px rgba(61, 220, 132, .55); }
+  #alphaTab .at-selection { background: rgba(61, 220, 132, .1); }
+  #alphaTab .at-highlight, #alphaTab .at-highlight * { fill: var(--accent) !important; stroke: var(--accent) !important; }
+
+  /* mixer */
+  .mixer {
+    position: absolute; top: 0; right: 0; bottom: 0; width: min(360px, 92vw);
+    background: var(--panel); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; z-index: 5;
+  }
+  .mixer header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; border-bottom: 1px solid var(--border-soft);
+  }
+  .mixer header b { font-size: 13px; }
+  .mixer .list { overflow: auto; padding: 8px; }
+  .mtrack { padding: 10px; border-radius: var(--radius); }
+  .mtrack:hover { background: var(--panel-2); }
+  .mtrack .name { font-size: 13px; margin-bottom: 8px; display: flex; gap: 8px; align-items: center; }
+  .mtrack .name i { color: var(--muted-2); font-style: normal; font-family: var(--mono); font-size: 11px; }
+  .mctl { display: flex; align-items: center; gap: 8px; }
+  .mm {
+    width: 28px; height: 24px; border-radius: 5px; border: 1px solid var(--border);
+    font-size: 11px; font-weight: 700; color: var(--muted); font-family: var(--mono);
+  }
+  .mm.on.m { background: #7a2b2b; border-color: #a13a3a; color: #ffd9d9; }
+  .mm.on.s { background: #2b5f7a; border-color: #3a86a1; color: #d9f1ff; }
+  input[type=range] { -webkit-appearance: none; appearance: none; height: 22px; background: none; }
+  input[type=range]::-webkit-slider-runnable-track { height: 3px; background: #333a45; border-radius: 2px; }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%;
+    background: var(--accent); margin-top: -4.5px;
+  }
+
+  /* ---------- player bar ---------- */
+  .playerbar {
+    flex: 0 0 auto; background: var(--panel); border-top: 1px solid var(--border-soft);
+    padding: 10px 16px 12px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .progress { display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+  .bar {
+    flex: 1; height: 18px; display: flex; align-items: center; cursor: pointer; position: relative;
+  }
+  .bar .rail { height: 4px; width: 100%; background: #2a303a; border-radius: 3px; overflow: hidden; position: relative; }
+  .bar .fill { height: 100%; width: 0%; background: var(--accent); }
+  .bar .loopzone { position: absolute; top: 0; bottom: 0; background: rgba(61,220,132,.28); border-left: 2px solid var(--accent); border-right: 2px solid var(--accent); z-index: 2; }
+  .bar .head { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); transform: translateX(-50%); z-index: 3; }
+  .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .ctrl {
+    height: 34px; min-width: 34px; padding: 0 10px; border-radius: 7px;
+    border: 1px solid var(--border); background: var(--panel-2); font-size: 13px;
+    display: inline-flex; align-items: center; gap: 6px; color: var(--text);
+  }
+  .ctrl:hover { border-color: #3a4150; }
+  .ctrl.on { background: var(--accent); color: #06210f; border-color: var(--accent); font-weight: 600; }
+  .ctrl.ghost { background: none; }
+  .ctrl.play { min-width: 44px; justify-content: center; background: var(--accent); color: #06210f; border-color: var(--accent); font-size: 15px; }
+  .ctrl small { color: inherit; opacity: .75; font-size: 11px; font-family: var(--mono); }
+  .speed { display: flex; align-items: center; gap: 6px; padding: 0 8px 0 6px; }
+  .speed input[type=range] { width: 120px; }
+  .speed .val { font-family: var(--mono); font-size: 12px; min-width: 46px; text-align: right; color: var(--muted); }
+  .sep { width: 1px; height: 22px; background: var(--border); margin: 0 2px; }
+  .abtn { font-family: var(--mono); font-weight: 700; }
+  .abtn.set { border-color: var(--accent-dim); color: var(--accent); }
+
+  /* toast + overlay */
+  .toast {
+    position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%);
+    background: #2a1d1d; border: 1px solid #5a3333; color: #ffdcdc;
+    padding: 10px 16px; border-radius: var(--radius); font-size: 13px; max-width: 80vw; z-index: 30;
+  }
+  .overlay {
+    position: fixed; inset: 0; background: rgba(6,8,10,.72); z-index: 40;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 22px 24px; width: min(560px, 94vw); max-height: 86vh; overflow: auto;
+  }
+  .card h2 { margin: 0 0 14px; font-size: 16px; }
+  .card h3 { margin: 18px 0 8px; font-size: 13px; color: var(--muted); font-weight: 600; }
+  .keys { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; align-items: center; font-size: 13px; }
+  .keys kbd {
+    font-family: var(--mono); font-size: 11.5px; background: var(--panel-2);
+    border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; padding: 3px 7px;
+  }
+  .keys span { color: var(--muted); }
+  .card .close { margin-top: 20px; display: flex; justify-content: flex-end; }
+  .status { color: var(--muted); font-size: 12px; font-family: var(--mono); }
+  .loading { display: inline-flex; align-items: center; gap: 8px; color: var(--warn); font-size: 12px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); animation: pulse 1.1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: .35 } 50% { opacity: 1 } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><b>TabDeck</b><span>本地谱面播放器</span></div>
+  <div class="spacer"></div>
+  <div class="song hidden" id="songInfo"><span class="t" id="songTitle"></span><span class="a" id="songArtist"></span></div>
+  <div class="spacer"></div>
+  <span class="status" id="status"></span>
+  <button class="tbtn" id="btnOpen">打开文件</button>
+  <button class="tbtn" id="btnMixer">混音台</button>
+  <button class="tbtn" id="btnHelp">快捷键</button>
+</header>
+
+<main>
+  <!-- 空状态 -->
+  <section class="empty" id="empty">
+    <div class="drop" id="drop">
+      <h1>把谱拖进来</h1>
+      <p>文件只在你浏览器里解析，不会上传到任何服务器。</p>
+      <div class="fmts">.gp &nbsp; .gp3/.gp4/.gp5 &nbsp; .gpx &nbsp; .musicxml/.xml/.mxl &nbsp; .cap &nbsp; .alphatex</div>
+      <div class="rowbtns">
+        <button class="btn primary" id="btnPick">选择文件</button>
+        <button class="btn" id="btnDemo">载入内置示例</button>
+      </div>
+    </div>
+    <p class="tiny">
+      本工具不托管、不分发任何乐谱，只做本地渲染与播放。请仅加载你有权使用的谱面文件。
+    </p>
+  </section>
+
+  <!-- 谱面 -->
+  <section class="stage hidden" id="stage">
+    <div class="trackstrip">
+      <span class="label">音轨</span>
+      <div id="pills" style="display:flex; gap:8px;"></div>
+    </div>
+    <div class="viewport" id="viewport">
+      <div id="alphaTab"></div>
+    </div>
+    <aside class="mixer hidden" id="mixer">
+      <header><b>混音台</b><button class="tbtn" id="btnMixerClose">关闭</button></header>
+      <div class="list" id="mixerList"></div>
+    </aside>
+  </section>
+</main>
+
+<!-- 播放条 -->
+<footer class="playerbar hidden" id="playerbar">
+  <div class="progress">
+    <span id="tCur">0:00</span>
+    <div class="bar" id="bar">
+      <div class="rail">
+        <div class="loopzone hidden" id="loopZone"></div>
+        <div class="fill" id="fill"></div>
+      </div>
+      <div class="head" id="head" style="left:0%"></div>
+    </div>
+    <span id="tEnd">0:00</span>
+  </div>
+  <div class="controls">
+    <button class="ctrl play" id="btnPlay" title="播放 / 暂停 (空格)">▶</button>
+    <button class="ctrl ghost" id="btnHome" title="回到开头 (Home)">⏮</button>
+    <div class="sep"></div>
+    <div class="ctrl speed">
+      <button id="spdDown" title="减速 (-)">−</button>
+      <input type="range" id="spd" min="0.25" max="1.5" step="0.05" value="1">
+      <button id="spdUp" title="加速 (+)">+</button>
+      <span class="val" id="spdVal">100%</span>
+    </div>
+    <button class="ctrl" id="btnLoop" title="循环 (L)">循环 <small>L</small></button>
+    <div class="ctrl" style="padding:0 6px; gap:4px;">
+      <button class="abtn" id="btnA" title="把当前位置设为 A">A</button>
+      <button class="abtn" id="btnB" title="把当前位置设为 B">B</button>
+      <button class="abtn" id="btnABClear" title="清除 A/B">✕</button>
+    </div>
+    <div class="sep"></div>
+    <button class="ctrl" id="btnMetro" title="节拍器 (N)">节拍器 <small>N</small></button>
+    <button class="ctrl" id="btnCount" title="预备拍 (C)">预备拍 <small>C</small></button>
+    <button class="ctrl" id="btnStave" title="显示 / 隐藏五线谱">五线谱</button>
+    <div class="sep"></div>
+    <div class="ctrl" style="padding:0 10px; gap:8px;">
+      <span style="font-size:15px">🔊</span>
+      <input type="range" id="vol" min="0" max="1" step="0.01" value="0.8" style="width:90px">
+    </div>
+    <div class="spacer" style="flex:1"></div>
+    <span class="loading hidden" id="loading"><i class="dot"></i>音色库加载中…</span>
+  </div>
+</footer>
+
+<div class="toast hidden" id="toast"></div>
+
+<!-- 快捷键 -->
+<div class="overlay hidden" id="help">
+  <div class="card">
+    <h2>快捷键</h2>
+    <div class="keys">
+      <kbd>空格</kbd><span>播放 / 暂停</span>
+      <kbd>← →</kbd><span>后退 / 前进 1 秒</span>
+      <kbd>↑ ↓</kbd><span>上一行 / 下一行谱面</span>
+      <kbd>Home / End</kbd><span>回到开头 / 跳到结尾</span>
+      <kbd>S</kbd><span>减速 +5%（Shift+S 加速）</span>
+      <kbd>L</kbd><span>开关循环</span>
+      <kbd>A / B</kbd><span>把当前位置设为循环起点 / 终点</span>
+      <kbd>N</kbd><span>节拍器</span>
+      <kbd>C</kbd><span>预备拍</span>
+      <kbd>M</kbd><span>静音当前显示的音轨</span>
+      <kbd>1 – 9</kbd><span>只显示第 N 条音轨</span>
+      <kbd>0</kbd><span>显示全部音轨</span>
+      <kbd>I</kbd><span>打开混音台</span>
+      <kbd>?</kbd><span>开关这个面板</span>
+      <kbd>Esc</kbd><span>关闭面板</span>
+    </div>
+    <h3>说明</h3>
+    <p class="tiny" style="max-width:none">
+      变速、循环、单轨静音全部免费无限制。谱面版权归原权利人所有，请仅加载你有权使用的文件。
+      引擎：<a href="https://www.alphatab.net/" style="color:var(--accent)">alphaTab</a>（MPL-2.0）。
+    </p>
+    <div class="close"><button class="btn" id="btnHelpClose">知道了</button></div>
+  </div>
+</div>
+
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const el = {
+  empty: $('empty'), stage: $('stage'), drop: $('drop'), viewport: $('viewport'),
+  alphaTab: $('alphaTab'), playerbar: $('playerbar'), mixer: $('mixer'), mixerList: $('mixerList'),
+  pills: $('pills'), songInfo: $('songInfo'), songTitle: $('songTitle'), songArtist: $('songArtist'),
+  status: $('status'), loading: $('loading'), toast: $('toast'), help: $('help'),
+  bar: $('bar'), fill: $('fill'), head: $('head'), loopZone: $('loopZone'),
+  tCur: $('tCur'), tEnd: $('tEnd'), spd: $('spd'), spdVal: $('spdVal'),
+  btnPlay: $('btnPlay'), btnLoop: $('btnLoop'), btnMetro: $('btnMetro'), btnCount: $('btnCount'),
+  btnA: $('btnA'), btnB: $('btnB'), btnABClear: $('btnABClear'), vol: $('vol'),
+};
+
+/* ---------------- 偏好持久化 ---------------- */
+const PREF_KEY = 'tabdeck.prefs.v1';
+const prefs = Object.assign(
+  { speed: 1, loop: false, metronome: false, countIn: false, volume: 0.8, showStaff: false },
+  JSON.parse(localStorage.getItem(PREF_KEY) || '{}')
+);
+const savePrefs = () => localStorage.setItem(PREF_KEY, JSON.stringify(prefs));
+
+let api = null, AT = null, tracks = [], activeTrackIndex = null, soloState = new Map(), muteState = new Map();
+let loopA = null, loopB = null;
+
+function toast(msg, ms = 4200) {
+  el.toast.textContent = msg;
+  el.toast.classList.remove('hidden');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.toast.classList.add('hidden'), ms);
+}
+const fmt = (ms) => {
+  if (!isFinite(ms) || ms < 0) ms = 0;
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+};
+
+/* ---------------- 内置示例（自作曲，无版权问题） ---------------- */
+// 16 小节：横向布局下要够长，才能看出“谱面滑过去”的效果（4 小节一屏就放完了）
+const DEMO_TEX = `
+\\title "TabDeck Demo"
+\\subtitle "E 小调五声 · 自作曲"
+\\artist "TabDeck"
+\\tempo 100
+.
+:8 0.6 3.6 5.6 7.5 5.5 7.5 5.6 |
+:8 3.6 5.6 7.6 8.5 7.5 5.5 3.5 |
+:4 0.6 3.6 5.6 7.6 |
+:2 5.6 3.6 |
+:8 0.6 3.6 5.6 7.5 5.5 7.5 5.6 |
+:8 3.6 5.6 7.6 8.5 7.5 5.5 3.5 |
+:4 0.6 3.6 5.6 7.6 |
+:2 3.6 0.6 |
+:8 12.6 10.6 8.6 7.6 5.6 7.6 5.6 3.6 |
+:8 5.5 7.5 5.5 3.5 2.5 3.5 5.5 7.5 |
+:4 0.6 3.6 5.6 7.6 |
+:2 5.6 7.6 |
+:8 0.6 3.6 5.6 7.5 5.5 7.5 5.6 |
+:8 3.6 5.6 7.6 8.5 7.5 5.5 3.5 |
+:4 0.6 3.6 5.6 7.6 |
+:2 0.6 0.6
+`;
+
+/* ---------------- 初始化 alphaTab ---------------- */
+async function initEngine() {
+  if (location.protocol === 'file:') {
+    toast('请通过本地服务器打开（不要直接双击 html），否则浏览器会拦下 worker 与音色库。', 9000);
+  }
+  const alphaTab = await import('./vendor/alphatab/alphaTab.min.mjs');
+  // 注意：1.8.x 的 PlayerMode 没有 “Enabled”，只有 EnabledAutomatic / EnabledSynthesizer…，
+  // 传错字符串会静默降级成 Disabled（播放器完全不创建）。所以这里直接用枚举对象。
+  const PM = alphaTab.PlayerMode || {};
+  const SM = alphaTab.ScrollMode || {};
+  const LM = alphaTab.LayoutMode || {};
+  const SP = alphaTab.StaveProfile || {};
+  AT = alphaTab;
+  const settings = {
+    core: { fontDirectory: './vendor/alphatab/font/' },
+    display: {
+      layoutMode: LM.Horizontal !== undefined ? LM.Horizontal : 'Horizontal',
+      scale: 1.25,
+      // 默认只出六线谱（Songsterr 的手感），需要五线谱时用工具栏切换
+      staveProfile: prefs.showStaff && SP.ScoreTab !== undefined ? SP.ScoreTab : (SP.Tab !== undefined ? SP.Tab : 'Tab'),
+      // alphaTab 默认是“白纸黑墨”，深色界面下必须自己给一套颜色
+      resources: {
+        staffLineColor: '#3a424e',
+        barSeparatorColor: '#2b323c',
+        barNumberColor: '#6b7480',
+        mainGlyphColor: '#e7eaee',
+        secondaryGlyphColor: '#98a1ad',
+        scoreInfoColor: '#8b929e',
+      },
+    },
+    player: {
+      playerMode: PM.EnabledAutomatic !== undefined ? PM.EnabledAutomatic : 'EnabledAutomatic',
+      soundFont: './vendor/alphatab/soundfont/sonivox.sf2',
+      scrollElement: el.viewport,
+      // Smooth = 谱面按播放速度持续滑过去（Songsterr 的“滑窗”手感）；
+      // OffScreen 则是光标自己在谱面上往右跑、出屏才翻页，完全不是那个味道。
+      scrollMode: SM.Smooth !== undefined ? SM.Smooth : 'Smooth',
+      enableCursor: true,
+      enableAnimatedBeatCursor: true,
+      enableElementHighlighting: true,
+      enableUserInteraction: true,
+    },
+  };
+  let inst;
+  try {
+    inst = new alphaTab.AlphaTabApi(el.alphaTab, settings);
+  } catch (e) {
+    console.warn('settings 初始化失败，回退默认:', e);
+    inst = new alphaTab.AlphaTabApi(el.alphaTab, { player: { soundFont: './vendor/alphatab/soundfont/sonivox.sf2' } });
+  }
+  wire(inst, alphaTab);
+  return inst;
+}
+
+function wire(a, alphaTab) {
+  api = a;
+  a.scoreLoaded.on((score) => {
+    tracks = a.tracks || [];
+    activeTrackIndex = null;
+    readyApplied = false;
+    soloState.clear(); muteState.clear();
+    el.empty.classList.add('hidden');
+    el.stage.classList.remove('hidden');
+    el.playerbar.classList.remove('hidden');
+    el.songInfo.classList.remove('hidden');
+    el.songTitle.textContent = score.title || '未命名';
+    el.songArtist.textContent = score.artist || '';
+    document.title = `${score.title || '未命名'} · TabDeck`;
+    renderPills();
+    renderMixer();
+    updateTransportUI();
+    el.tEnd.textContent = fmt(a.endTime);
+    el.status.textContent = `${tracks.length} 轨`;
+    syncScrollOffset();     // 视口这时才有宽度，滚动偏移要在这里算
+  });
+  a.playerStateChanged.on(() => updateTransportUI());
+  a.soundFontLoad.on(() => el.loading.classList.remove('hidden'));
+  a.error.on((e) => toast(`解析失败：${e && e.message ? e.message : '未知错误'}`));
+  requestAnimationFrame(tickUI);
+  // 备注：soundFontLoaded / soundFontLoadFailed 只挂在 api.player 上，
+  // 且 player 在构造时可能尚未创建，所以用 isReadyForPlayback 轮询兜底（见 tickUI）。
+  window.__tabdeck = { get api() { return api; }, get prefs() { return prefs; } };
+}
+
+/* ---------------- 载入文件 ---------------- */
+async function loadFile(file) {
+  const name = file.name || '';
+  const lower = name.toLowerCase();
+  try {
+    if (/\.(tex|alphatex)$/.test(lower)) {
+      const text = await file.text();
+      api.tex(text);
+    } else {
+      const buf = await file.arrayBuffer();
+      api.load(buf);
+    }
+    el.status.textContent = name;
+  } catch (e) {
+    toast(`打不开这个文件：${e.message || e}`);
+  }
+}
+
+/* ---------------- 音轨 UI ---------------- */
+function renderPills() {
+  el.pills.innerHTML = '';
+  const mk = (label, index) => {
+    const b = document.createElement('button');
+    b.className = 'pill' + (activeTrackIndex === index ? ' on' : '');
+    b.textContent = label;
+    return b;
+  };
+  const all = mk('全部', null);
+  all.onclick = () => { activeTrackIndex = null; api.renderTracks(tracks); renderPills(); };
+  el.pills.appendChild(all);
+  tracks.forEach((t, i) => {
+    const b = mk(t.name || `音轨 ${i + 1}`, i);
+    b.onclick = () => { activeTrackIndex = i; api.renderTracks([t]); renderPills(); };
+    el.pills.appendChild(b);
+  });
+}
+
+function renderMixer() {
+  el.mixerList.innerHTML = '';
+  tracks.forEach((t, i) => {
+    const row = document.createElement('div');
+    row.className = 'mtrack';
+    const name = document.createElement('div');
+    name.className = 'name';
+    name.innerHTML = `<i>${String(i + 1).padStart(2, '0')}</i><span></span>`;
+    name.querySelector('span').textContent = t.name || `音轨 ${i + 1}`;
+    const ctl = document.createElement('div');
+    ctl.className = 'mctl';
+    const mBtn = document.createElement('button');
+    mBtn.className = 'mm m' + (muteState.get(i) ? ' on' : '');
+    mBtn.textContent = 'M';
+    mBtn.onclick = () => {
+      const v = !muteState.get(i);
+      muteState.set(i, v);
+      mBtn.classList.toggle('on', v);
+      api.changeTrackMute([t], v);
+    };
+    const sBtn = document.createElement('button');
+    sBtn.className = 'mm s' + (soloState.get(i) ? ' on' : '');
+    sBtn.textContent = 'S';
+    sBtn.onclick = () => {
+      const v = !soloState.get(i);
+      soloState.set(i, v);
+      sBtn.classList.toggle('on', v);
+      api.changeTrackSolo([t], v);
+    };
+    const vol = document.createElement('input');
+    vol.type = 'range'; vol.min = '0'; vol.max = '1'; vol.step = '0.01'; vol.value = '1';
+    vol.style.flex = '1';
+    vol.oninput = () => api.changeTrackVolume([t], Number(vol.value));
+    ctl.append(mBtn, sBtn, vol);
+    row.append(name, ctl);
+    el.mixerList.appendChild(row);
+  });
+}
+
+/* ---------------- 播放控制 ---------------- */
+const isPlaying = () => api && api.playerState === 1;
+
+function updateTransportUI() {
+  el.btnPlay.textContent = isPlaying() ? '❚❚' : '▶';
+  el.btnLoop.classList.toggle('on', !!(api && api.isLooping));
+  el.btnMetro.classList.toggle('on', prefs.metronome);
+  el.btnCount.classList.toggle('on', prefs.countIn);
+}
+
+function applyPrefs() {
+  if (!api) return;
+  api.playbackSpeed = prefs.speed;
+  api.isLooping = prefs.loop;
+  api.metronomeVolume = prefs.metronome ? 1 : 0;
+  api.countInVolume = prefs.countIn ? 1 : 0;
+  api.masterVolume = prefs.volume;
+  el.spd.value = prefs.speed;
+  el.spdVal.textContent = Math.round(prefs.speed * 100) + '%';
+  el.vol.value = prefs.volume;
+  $('btnStave').classList.toggle('on', !!prefs.showStaff);
+  updateTransportUI();
+  syncScrollOffset();     // 布局稳定后再校准一次指针位置
+}
+
+function setSpeed(v) {
+  v = Math.min(1.5, Math.max(0.25, Math.round(v * 100) / 100));
+  prefs.speed = v; savePrefs();
+  if (api) api.playbackSpeed = v;
+  el.spd.value = v;
+  el.spdVal.textContent = Math.round(v * 100) + '%';
+}
+
+function setLoopRange(a, b) {
+  if (a === null || b === null || b <= a) {
+    loopA = a; loopB = b;
+    if (api) api.playbackRange = null;
+  } else {
+    loopA = a; loopB = b;
+    if (api) api.playbackRange = { startTick: a, endTick: b };
+  }
+  el.btnA.classList.toggle('set', loopA !== null);
+  el.btnB.classList.toggle('set', loopB !== null);
+  updateLoopZone();
+}
+
+function updateLoopZone() {
+  if (!api || loopA === null || loopB === null || loopB <= loopA) {
+    el.loopZone.classList.add('hidden');
+    return;
+  }
+  const end = api.endTick || 1;
+  el.loopZone.classList.remove('hidden');
+  el.loopZone.style.left = (loopA / end * 100) + '%';
+  el.loopZone.style.width = ((loopB - loopA) / end * 100) + '%';
+}
+
+let readyApplied = false;
+function tickUI() {
+  if (api && api.score) {
+    const end = api.endTick || 1;
+    const p = Math.min(1, Math.max(0, api.tickPosition / end));
+    el.fill.style.width = (p * 100) + '%';
+    el.head.style.left = (p * 100) + '%';
+    el.tCur.textContent = fmt(api.timePosition);
+    el.tEnd.textContent = fmt(api.endTime);
+    if (!readyApplied && api.isReadyForPlayback) {
+      readyApplied = true;
+      el.loading.classList.add('hidden');
+      applyPrefs();
+    }
+  }
+  requestAnimationFrame(tickUI);
+}
+
+/* ---------------- 视口定位（“滑窗”手感） ---------------- */
+// Songsterr 的手感是：播放指针大致停在视口左侧 1/3，谱面从右往左滑过去。
+// alphaTab 默认把指针钉在视口最左边（scrollOffsetX = 0），当前小节会被切掉一大半；
+// 实测 scrollOffsetX 与指针的屏幕 x 是 1:1 的，所以按视口宽度算一个负偏移。
+function syncScrollOffset() {
+  if (!api || !api.settings || !api.settings.player) return;
+  const w = el.viewport.clientWidth || 0;
+  if (!w) return;
+  const next = -Math.round(w * 0.33);
+  if (api.settings.player.scrollOffsetX === next) return;   // 避免无谓的 updateSettings
+  api.settings.player.scrollOffsetX = next;
+  api.updateSettings();
+}
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(syncScrollOffset, 200);
+});
+
+// 跳转之后要让视口跟上，否则指针会飞出屏幕（alphaTab 只在播放过程中自动滚动）
+function seekTo(tick) {
+  if (!api) return;
+  const end = api.endTick || 0;
+  api.tickPosition = Math.max(0, Math.min(end, Math.round(tick)));
+  if (api.scrollToCursor) api.scrollToCursor();
+}
+function seekBySeconds(delta) {
+  if (!api) return;
+  api.timePosition = Math.max(0, Math.min(api.endTime || 0, api.timePosition + delta * 1000));
+  if (api.scrollToCursor) api.scrollToCursor();
+}
+function rewind() {
+  if (!api) return;
+  if (api.player && api.player.stop) api.player.stop(); else api.pause();
+  seekTo(0);
+}
+
+/* ---------------- 事件绑定 ---------------- */
+$('btnPick').onclick = () => pickInput.click();
+$('btnOpen').onclick = () => pickInput.click();
+$('btnDemo').onclick = () => { api.tex(DEMO_TEX); el.status.textContent = '内置示例'; };
+const pickInput = document.createElement('input');
+pickInput.type = 'file';
+pickInput.style.display = 'none';
+pickInput.accept = '.gp,.gp3,.gp4,.gp5,.gpx,.gp7,.musicxml,.xml,.mxl,.cap,.capx,.alphatex,.tex';
+pickInput.onchange = () => pickInput.files[0] && loadFile(pickInput.files[0]);
+document.body.appendChild(pickInput);
+
+['dragenter', 'dragover'].forEach(ev => document.addEventListener(ev, e => {
+  e.preventDefault(); el.drop.classList.add('hot');
+}));
+['dragleave', 'drop'].forEach(ev => document.addEventListener(ev, e => {
+  e.preventDefault();
+  if (ev === 'drop' || e.target === document.documentElement) el.drop.classList.remove('hot');
+}));
+document.addEventListener('drop', e => {
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) loadFile(f);
+});
+
+el.btnPlay.onclick = () => api && api.playPause();
+$('btnHome').onclick = () => rewind();
+el.spd.oninput = () => setSpeed(Number(el.spd.value));
+$('spdUp').onclick = () => setSpeed(prefs.speed + 0.05);
+$('spdDown').onclick = () => setSpeed(prefs.speed - 0.05);
+el.vol.oninput = () => { prefs.volume = Number(el.vol.value); savePrefs(); if (api) api.masterVolume = prefs.volume; };
+el.btnLoop.onclick = () => {
+  if (!api) return;
+  prefs.loop = !api.isLooping; savePrefs();
+  api.isLooping = prefs.loop;
+  updateTransportUI();
+};
+el.btnMetro.onclick = () => {
+  prefs.metronome = !prefs.metronome; savePrefs();
+  if (api) api.metronomeVolume = prefs.metronome ? 1 : 0;
+  updateTransportUI();
+};
+el.btnCount.onclick = () => {
+  prefs.countIn = !prefs.countIn; savePrefs();
+  if (api) api.countInVolume = prefs.countIn ? 1 : 0;
+  updateTransportUI();
+};
+el.btnA.onclick = () => { if (api) setLoopRange(api.tickPosition, loopB); };
+el.btnB.onclick = () => { if (api) setLoopRange(loopA, api.tickPosition); };
+el.btnABClear.onclick = () => setLoopRange(null, null);
+
+$('btnStave').onclick = () => {
+  if (!api || !AT) return;
+  prefs.showStaff = !prefs.showStaff; savePrefs();
+  const SP = AT.StaveProfile || {};
+  api.settings.display.staveProfile = prefs.showStaff
+    ? (SP.ScoreTab !== undefined ? SP.ScoreTab : 1)
+    : (SP.Tab !== undefined ? SP.Tab : 3);
+  api.updateSettings();
+  api.render();
+  $('btnStave').classList.toggle('on', prefs.showStaff);
+};
+
+el.bar.onclick = (e) => {
+  if (!api || !api.score) return;
+  const r = el.bar.getBoundingClientRect();
+  seekTo((e.clientX - r.left) / r.width * api.endTick);
+};
+
+$('btnMixer').onclick = () => el.mixer.classList.toggle('hidden');
+$('btnMixerClose').onclick = () => el.mixer.classList.add('hidden');
+$('btnHelp').onclick = () => el.help.classList.remove('hidden');
+$('btnHelpClose').onclick = () => el.help.classList.add('hidden');
+el.help.onclick = (e) => { if (e.target === el.help) el.help.classList.add('hidden'); };
+
+document.addEventListener('keydown', (e) => {
+  if (!api || e.metaKey || e.ctrlKey || e.altKey) return;
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' && e.key !== 'Escape') return;
+  switch (e.key) {
+    case ' ': e.preventDefault(); api.playPause(); break;
+    case 'ArrowLeft': seekBySeconds(-1); break;
+    case 'ArrowRight': seekBySeconds(1); break;
+    case 'Home': rewind(); break;
+    case 'End': seekTo(api.endTick); break;
+    case 's': case 'S': setSpeed(prefs.speed + (e.shiftKey ? 0.05 : -0.05)); break;
+    case 'l': case 'L': el.btnLoop.onclick(); break;
+    case 'n': case 'N': el.btnMetro.onclick(); break;
+    case 'c': case 'C': el.btnCount.onclick(); break;
+    case 'i': case 'I': el.mixer.classList.toggle('hidden'); break;
+    case 'm': case 'M': {
+      const i = activeTrackIndex === null ? 0 : activeTrackIndex;
+      const t = tracks[i];
+      if (t) { const v = !muteState.get(i); muteState.set(i, v); api.changeTrackMute([t], v); renderMixer(); }
+      break;
+    }
+    case '?': el.help.classList.toggle('hidden'); break;
+    case 'Escape': el.help.classList.add('hidden'); el.mixer.classList.add('hidden'); break;
+    default:
+      if (/^[0-9]$/.test(e.key) && tracks.length) {
+        const n = Number(e.key);
+        if (n === 0) { activeTrackIndex = null; api.renderTracks(tracks); }
+        else if (tracks[n - 1]) { activeTrackIndex = n - 1; api.renderTracks([tracks[n - 1]]); }
+        renderPills();
+      }
+  }
+});
+
+/* ---------------- 启动 ---------------- */
+initEngine().then(() => {
+  applyPrefs();
+}).catch(err => {
+  console.error(err);
+  toast('引擎启动失败：' + (err && err.message ? err.message : err) + '（若直接双击打开 html，请改用本地服务器）', 10000);
+});
+</script>
+</body>
+</html>

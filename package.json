@@ -1,0 +1,20 @@
+{
+  "name": "tabdeck",
+  "version": "0.1.0",
+  "description": "本地吉他谱播放器：拖入 Guitar Pro / MusicXML 文件即可渲染、变速、循环练习（alphaTab 驱动，纯前端静态页）",
+  "scripts": {
+    "serve": "python3 -m http.server 8777 --bind 127.0.0.1",
+    "fixtures": "node tools/make-fixtures.cjs",
+    "verify": "node tools/verify.mjs"
+  },
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "@coderline/alphatab": "^1.8.4"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.0"
+  },
+  "private": true
+}
